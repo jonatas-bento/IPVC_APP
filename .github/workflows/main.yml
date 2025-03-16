@@ -55,8 +55,13 @@ jobs:
         # Properly Accept SDK Licenses
         echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
     
-        # Install Required SDK Components
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+         # Install Required SDK Components
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-30" \
+          "platforms;android-33" \
+          "build-tools;30.0.3" \
+          "build-tools;33.0.2"
       shell: bash
 
 
