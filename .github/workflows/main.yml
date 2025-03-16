@@ -108,17 +108,18 @@ jobs:
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
       
-      # ✅ Step 8: Fix File Permissions Before Upload
+            # ✅ Step 8: Fix File Permissions for AAB File
       - name: Fix Permissions for AAB File
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $HOME/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android/
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/
 
       # ✅ Step 9: Upload AAB as Artifact
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
-          path: "**/*.aab"
+          path: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/android/bin/com.companyname.ipbvc_app.aab"
       
   # 🔹 OPTIONAL: Deploy to Google Play
   deploy:
