@@ -9,21 +9,17 @@ on:
       - main
 
 jobs:
-  setup-android:
-    runs-on: self-hosted
+  setup-android-sdk:
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Install Android SDK
+    - name: Install Android SDK and Accept Licenses
       run: |
-        wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
-        unzip -o commandlinetools-linux-7583922_latest.zip -d ~/android-sdk
         export ANDROID_HOME=$HOME/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-        yes | sdkmanager --licenses
-        sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
-
+        mkdir -p $ANDROID_HOME
+        wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
+        unzip -o commandlinetools-linux-7583922_latest.zip -d $ANDROID_HOME
+        yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses
+      shell: bash
 
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v1
