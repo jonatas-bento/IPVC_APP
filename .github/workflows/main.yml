@@ -137,6 +137,7 @@ jobs:
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
           packageName: "com.companyname.ipbvc_app"
-          releaseFiles: "app-release.aab"
+          releaseFiles: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/app-release.aab"
           track: production
           status: completed
+
