@@ -84,8 +84,20 @@ jobs:
           /p:PublishTrimmed=false \
           /p:RunAOTCompilation=false
 
-    - name: Publish Project
-      run: dotnet publish -c Release -o ./output --no-build
+    - name: Build and Publish Android App
+      run: |
+        export ANDROID_HOME=$HOME/android-sdk
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+    
+        dotnet publish --configuration Release --no-restore \
+          -f net7.0-android \
+          /p:AndroidSdkDirectory=$ANDROID_HOME \
+          /p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
+          /p:AndroidSdkPlatformToolsVersion=30.0.3 \
+          /p:PublishTrimmed=false \
+          /p:RunAOTCompilation=false
+
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
