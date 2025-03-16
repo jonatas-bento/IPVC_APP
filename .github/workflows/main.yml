@@ -22,13 +22,13 @@ jobs:
         dotnet-version: '7.0.x'  # Update to the latest supported version if necessary
 
     - name: Restore Dependencies
-      run: dotnet restore IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App.sln
+      run: dotnet restore /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App.sln
 
     - name: Build Project
-      run: dotnet build IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App.sln --configuration Release --no-restore
+      run: dotnet build  /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App.sln --configuration Release --no-restore
 
     - name: Publish Project
-      run: dotnet publish IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App/IPBVC_App.csproj -c Release -o ./output --no-build
+      run: dotnet publish  /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App/IPBVC_App.csproj -c Release -o ./output --no-build
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
