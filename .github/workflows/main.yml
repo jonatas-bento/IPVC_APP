@@ -1,109 +1,112 @@
-name: Build .NET MAUI App for Android
+name: Build and Deploy .NET MAUI Android App
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # Runs when code is pushed to main branch
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '7.0.x'
-
-    - name: Install Java 17 and Required Tools
-      run: |
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt-get remove --purge openjdk* -y
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt-get autoremove -y
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install openjdk-17-jdk unzip -y
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
-        java -version     
-
-    - name: Install Android SDK and Accept Licenses
-      run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        export ANDROID_SDK_ROOT=$ANDROID_HOME
-        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
     
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME
-        mkdir -p $ANDROID_HOME/cmdline-tools
-    
-        # Install unzip if not installed
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
-    
-        # Download and Extract SDK
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
-        unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
-        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-    
-        # Fix permissions
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/licenses
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
-    
-        # Properly Accept SDK Licenses
-        echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-    
-         # Install Required SDK Components
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-          "platform-tools" \
-          "platforms;android-30" \
-          "platforms;android-33" \
-          "build-tools;30.0.3" \
-          "build-tools;33.0.2"
-      shell: bash
+      # ✅ Step 1: Checkout Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
+      # ✅ Step 2: Setup .NET SDK
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 7.0.x
+          
+      # ✅ Step 3: Install Android SDK & Accept Licenses
+      - name: Install Android SDK
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-    - name: Install .NET MAUI Workloads
-      run: dotnet workload install maui-android
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME
+          mkdir -p $ANDROID_HOME/cmdline-tools
 
-    - name: Restore Dependencies
-      run: dotnet restore
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
 
-    - name: Build Project
-      run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        export ANDROID_SDK_ROOT=$ANDROID_HOME
-        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-    
-        dotnet build --configuration Release --no-restore \
-          /p:AndroidSdkDirectory=$ANDROID_HOME \
-          /p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
-          /p:AndroidSdkPlatformToolsVersion=30.0.3 \
-          /p:PublishTrimmed=false \
-          /p:RunAOTCompilation=false
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
+          unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
 
-    - name: Build and Publish Android App
-      run: |
-        export ANDROID_HOME=$HOME/android-sdk
-        export ANDROID_SDK_ROOT=$ANDROID_HOME
-        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-    
-        dotnet publish --configuration Release --no-restore \
-          -f net7.0-android \
-          /p:AndroidSdkDirectory=$ANDROID_HOME \
-          /p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
-          /p:AndroidSdkPlatformToolsVersion=30.0.3 \
-          /p:PublishTrimmed=false \
-          /p:RunAOTCompilation=false
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/licenses
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
 
+          echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-app
-        path: output/**/*.apk
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platform-tools" \
+            "platforms;android-30" \
+            "platforms;android-33" \
+            "build-tools;30.0.3" \
+            "build-tools;33.0.2"
 
-    - name: Clean Up Build Files
-      run: rm -rf ./output
+      # ✅ Step 4: Install .NET MAUI Workloads
+      - name: Install .NET MAUI Workloads
+        run: dotnet workload install maui-android
+
+      # ✅ Step 5: Restore Dependencies
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      # ✅ Step 6: Decode Keystore for Signing
+      - name: Decode Keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
+
+      # ✅ Step 7: Build & Sign the App
+      - name: Build Signed Android App Bundle
+        run: |
+          export ANDROID_HOME=$HOME/android-sdk
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+
+          dotnet publish --configuration Release --no-restore \
+            -f net7.0-android \
+            -p:AndroidSdkDirectory=$ANDROID_HOME \
+            -p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
+            -p:AndroidSdkPlatformToolsVersion=30.0.3 \
+            -p:PublishTrimmed=false \
+            -p:RunAOTCompilation=false \
+            -p:AndroidPackageFormat=aab \
+            -p:AndroidKeyStore=True \
+            -p:AndroidSigningKeyStore=$HOME/android_keystore.jks \
+            -p:AndroidSigningStorePass=${{ secrets.KEYSTORE_PASSWORD }} \
+            -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
+            -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
+
+      # ✅ Step 8: Upload AAB as Artifact
+      - name: Upload AAB as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: "**/*.aab"
+
+  # 🔹 OPTIONAL: Deploy to Google Play
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Download AAB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: app-release.aab
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
+          packageName: "com.companyname.ipbvc_app"
+          releaseFiles: "app-release.aab"
+          track: production
+          status: completed
