@@ -11,6 +11,13 @@ jobs:
     runs-on: self-hosted
 
     steps:
+
+        # ✅ Step 0: Fix Permissions Before Checkout
+      - name: Fix Folder Ownership
+        run: |
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP
+
     
       # ✅ Step 1: Checkout Repository
       - name: Checkout Repository
