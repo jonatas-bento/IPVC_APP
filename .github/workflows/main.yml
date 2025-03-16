@@ -9,23 +9,33 @@ on:
       - main
 
 jobs:
-  build:
+  setup-android:
     runs-on: self-hosted
-
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v2
+
+    - name: Install Android SDK
+      run: |
+        wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
+        unzip commandlinetools-linux-7583922_latest.zip -d ~/android-sdk
+        export ANDROID_HOME=$HOME/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        mkdir -p $ANDROID_HOME/cmdline-tools/latest
+        mv $ANDROID_HOME/cmdline-tools/bin $ANDROID_HOME/cmdline-tools/latest
+        yes | sdkmanager --licenses
+        sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '7.0.x'
 
-    - name: Restore Dependencies
-      run: dotnet restore
+    - name: Accept Android SDK licenses
+      run: yes | sdkmanager --licenses
 
     - name: Build Project
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore /p:AndroidSdkDirectory=$HOME/android-sdk
 
     - name: Publish Project
       run: dotnet publish -c Release -o ./output --no-build
@@ -33,8 +43,9 @@ jobs:
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: app-artifacts
+        name: android-app
         path: output/**/*.apk
 
     - name: Clean Up Build Files
       run: rm -rf ./output
+
