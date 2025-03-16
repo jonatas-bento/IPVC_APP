@@ -16,28 +16,19 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v2
 
-    - name: Print working directory
-      run: pwd
-
-    - name: List directory contents
-      run: ls -la
-
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '7.0.x'  # Suggest upgrading to a supported version soon
-
-    - name: List directory contents in the repository
-      run: ls -R ./  # This will list all files and directories recursively starting from the current directory
+        dotnet-version: '7.0.x'  # Consider updating to a supported version
 
     - name: Restore Dependencies
-      run: dotnet restore <correct-path-to-your-sln-file>
+      run: dotnet restore IPBVC_App.sln
 
     - name: Build Project
-      run: dotnet build <correct-path-to-your-sln-file> --configuration Release --no-restore
+      run: dotnet build IPBVC_App.sln --configuration Release --no-restore
 
     - name: Publish Project
-      run: dotnet publish <correct-path-to-your-csproj-file> -c Release -o ./output --no-build
+      run: dotnet publish IPBVC_App/IPBVC_App.csproj -c Release -o ./output --no-build
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
