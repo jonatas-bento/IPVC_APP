@@ -96,7 +96,12 @@ jobs:
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
       
-      # ✅ Step 8: Upload AAB as Artifact
+           # ✅ Step 8: Fix File Permissions Before Upload
+      - name: Fix Permissions for AAB File
+        run: |
+          chmod -R 777 $HOME/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android/
+
+      # ✅ Step 9: Upload AAB as Artifact
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
