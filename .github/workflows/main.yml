@@ -22,7 +22,7 @@ jobs:
         with:
           dotnet-version: 7.0.x
           
-      # ✅ Step 3: Install Android SDK & Accept Licenses
+      # ✅ Step 3: Install Android SDK & Accept Licenses (WITH SUDO)
       - name: Install Android SDK
         run: |
           export ANDROID_HOME=$HOME/android-sdk
@@ -30,7 +30,7 @@ jobs:
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME
-          mkdir -p $ANDROID_HOME/cmdline-tools
+          sudo mkdir -p $ANDROID_HOME/cmdline-tools
 
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
@@ -42,18 +42,19 @@ jobs:
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/licenses
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
 
-          echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          echo -e "y\ny\ny\ny\ny\ny\n" | sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
             "platforms;android-30" \
             "platforms;android-33" \
             "build-tools;30.0.3" \
             "build-tools;33.0.2"
 
-      # ✅ Step 4: Install .NET MAUI Workloads
+      # ✅ Step 4: Install .NET MAUI Workloads (WITH SUDO)
       - name: Install .NET MAUI Workloads
-        run: dotnet workload install maui-android
+        run: |
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S dotnet workload install maui-android
 
       # ✅ Step 5: Restore Dependencies
       - name: Restore Dependencies
@@ -63,14 +64,14 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
 
-      # ✅ Step 7: Build & Sign the App
+      # ✅ Step 7: Build & Sign the App (WITH SUDO)
       - name: Build Signed Android App Bundle
         run: |
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-          dotnet publish --configuration Release --no-restore \
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S dotnet publish --configuration Release --no-restore \
             -f net7.0-android \
             -p:AndroidSdkDirectory=$ANDROID_HOME \
             -p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
