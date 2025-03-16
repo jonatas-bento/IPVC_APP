@@ -58,24 +58,31 @@ jobs:
       # ✅ Step 4: Install .NET MAUI Workloads (WITH SUDO)
       - name: Install .NET MAUI Workloads
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S dotnet workload install maui-android
-
+          export DOTNET_ROOT=/usr/share/dotnet
+          export PATH=$DOTNET_ROOT:$PATH
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
+      
       # ✅ Step 5: Restore Dependencies
       - name: Restore Dependencies
-        run: dotnet restore
-
+        run: |
+          export DOTNET_ROOT=/usr/share/dotnet
+          export PATH=$DOTNET_ROOT:$PATH
+          dotnet restore
+      
       # ✅ Step 6: Decode Keystore for Signing
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
-
+      
       # ✅ Step 7: Build & Sign the App (WITH SUDO)
       - name: Build Signed Android App Bundle
         run: |
+          export DOTNET_ROOT=/usr/share/dotnet
+          export PATH=$DOTNET_ROOT:$PATH
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S dotnet publish --configuration Release --no-restore \
+      
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet publish --configuration Release --no-restore \
             -f net7.0-android \
             -p:AndroidSdkDirectory=$ANDROID_HOME \
             -p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
@@ -88,30 +95,31 @@ jobs:
             -p:AndroidSigningStorePass=${{ secrets.KEYSTORE_PASSWORD }} \
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
-
+      
       # ✅ Step 8: Upload AAB as Artifact
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
           path: "**/*.aab"
-
-  # 🔹 OPTIONAL: Deploy to Google Play
+      
+      # 🔹 OPTIONAL: Deploy to Google Play
   deploy:
-    needs: build
-    runs-on: self-hosted
-    steps:
-      - name: Download AAB Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: release-aab
-          path: app-release.aab
+        needs: build
+        runs-on: self-hosted
+        steps:
+          - name: Download AAB Artifact
+            uses: actions/download-artifact@v4
+            with:
+              name: release-aab
+              path: app-release.aab
+      
+          - name: Upload to Google Play
+            uses: r0adkll/upload-google-play@v1
+            with:
+              serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
+              packageName: "com.companyname.ipbvc_app"
+              releaseFiles: "app-release.aab"
+              track: production
+              status: completed
 
-      - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
-          packageName: "com.companyname.ipbvc_app"
-          releaseFiles: "app-release.aab"
-          track: production
-          status: completed
