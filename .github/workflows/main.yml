@@ -20,6 +20,8 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '7.0.x'  # Update to the latest supported version if necessary
+    - name: List directory structure
+      run: ls -R IPVC_APP/
 
     - name: Restore Dependencies
       run: dotnet restore /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App.sln
