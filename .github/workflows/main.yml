@@ -23,13 +23,13 @@ jobs:
         dotnet-version: '7.0.x'  # Ensure this matches the SDK version installed on your runner
 
     - name: Restore Dependencies
-      run: dotnet restore IPVC_APP/IPVC_APP/IPVC_App.sln
+      run: dotnet restore IPVC_APP/IPVC_APP/IPBVC_App.sln
 
     - name: Build Project
-      run: dotnet build IPBVC_App/IPBVC_App.sln --configuration Release --no-restore
+      run: dotnet build IPVC_APP/IPVC_APP/IPBVC_App.sln --configuration Release --no-restore
 
     - name: Publish Project
-      run: dotnet publish IPBVC_APP/IPBVC_APP/IPBVC_App.csproj -c Release -o ./output --no-build
+      run: dotnet publish IPVC_APP/IPVC_APP/IPBVC_App/IPBVC_App.csproj -c Release -o ./output --no-build
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
