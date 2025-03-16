@@ -80,7 +80,8 @@ jobs:
         dotnet build --configuration Release --no-restore \
           /p:AndroidSdkDirectory=$ANDROID_HOME \
           /p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
-          /p:AndroidSdkPlatformToolsVersion=30.0.3
+          /p:AndroidSdkPlatformToolsVersion=30.0.3 \
+          /p:PublishTrimmed=false
 
     - name: Publish Project
       run: dotnet publish -c Release -o ./output --no-build
