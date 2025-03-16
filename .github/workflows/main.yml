@@ -9,16 +9,19 @@ on:
       - main
 
 jobs:
-  setup-android-sdk:
+  setup-android:
     runs-on: ubuntu-latest
     steps:
-    - name: Install Android SDK and Accept Licenses
+    - name: Set up Android SDK
       run: |
         export ANDROID_HOME=$HOME/android-sdk
-        mkdir -p $ANDROID_HOME
+        mkdir -p $ANDROID_HOME/cmdline-tools/latest
         wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip
-        unzip -o commandlinetools-linux-7583922_latest.zip -d $ANDROID_HOME
-        yes | $ANDROID_HOME/cmdline-tools/bin/sdkmanager --licenses
+        unzip commandlinetools-linux-7583922_latest.zip -d $ANDROID_HOME/cmdline-tools/tmp
+        mv $ANDROID_HOME/cmdline-tools/tmp/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
+        rm -rf $ANDROID_HOME/cmdline-tools/tmp
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+        yes | sdkmanager --licenses
       shell: bash
 
     - name: Setup .NET SDK
