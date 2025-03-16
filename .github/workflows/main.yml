@@ -138,8 +138,9 @@ jobs:
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
-    serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
-    packageName: "com.companyname.ipbvc_app"
-    releaseFiles: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/com.companyname.ipbvc_app.aab"
-        track: production
-        status: completed
+             serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
+             packageName: "com.companyname.ipbvc_app"
+             releaseFiles: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/com.companyname.ipbvc_app.aab"
+             track: production
+             status: completed
+     
