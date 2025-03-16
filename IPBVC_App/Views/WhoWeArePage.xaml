@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="IPBVC_App.Views.WhoWeArePage"
+             Title="Nossa História">
+    <Grid>
+        <Image Source="ipbimage.jpeg" 
+Aspect="AspectFill"
+Opacity="0.4"  
+VerticalOptions="FillAndExpand"
+HorizontalOptions="FillAndExpand" />
+        <ScrollView>
+            <StackLayout Padding="20" Spacing="10">
+                <!-- Title as a Label -->
+                <Label Text="Bem-vindos à nossa comunidade!"
+                   FontSize="22"
+                   FontAttributes="Bold"/>
+
+                <!-- WebView for Justified Text -->
+                <WebView HeightRequest="650"
+                         Opacity="0.5"
+                         
+                         >
+                    <WebView.Source
+                        
+                        >
+                        
+                        <HtmlWebViewSource Html="&lt;html&gt;&lt;body&gt;&lt;p style='text-align: justify; font-size: 18px; font-family: sans-serif;'&gt;Nossa igreja tem sido um farol de fé, esperança e amor na comunidade desde sua fundação em [ano de fundação]. Convidamos você a conhecer um pouco mais sobre nossa jornada e o impacto que temos tido ao longo dos anos.&lt;/p&gt;
+                    &lt;p style='text-align: justify; font-size: 18px;'&gt;Descreva quando e como a igreja foi fundada. Mencione os fundadores e o que os motivou a criar a comunidade.&lt;/p&gt;
+                    &lt;p style='text-align: justify; font-size: 18px;'&gt;Explique como a igreja cresceu e se expandiu. Inclua marcos importantes, como a construção de novas instalações, a introdução de programas comunitários, e a expansão dos serviços religiosos.&lt;/p&gt;
+                    &lt;p style='text-align: justify; font-size: 18px;'&gt;Relate eventos que tiveram grande significado para a comunidade, como visitas de figuras importantes, celebrações de grandes festividades ou a superação de grandes adversidades.&lt;/p&gt;
+                    &lt;p style='text-align: justify; font-size: 18px;'&gt;Encerre com um convite para que as pessoas se juntem à comunidade e contribuam para a continuação dessa bela história. Expresse gratidão pela lealdade e apoio dos membros ao longo dos anos e reitere o compromisso da igreja com os valores de fé e comunidade.&lt;/p&gt;
+                    &lt;p style='text-align: justify; font-size: 18px; font-style: italic;'&gt;Visite-nos ou entre em contato conosco para saber mais e como você pode fazer parte da nossa história!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;" />
+                    </WebView.Source>
+                </WebView>
+            </StackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

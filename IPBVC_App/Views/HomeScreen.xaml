@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="IPBVC_App.Views.HomeScreen"
+             Title="IP de Vilar Carioca">
+    <Grid>
+        <Image Source="ipbimage.jpeg" 
+            Aspect="AspectFill"
+            Opacity="0.4"  
+            VerticalOptions="FillAndExpand"
+            HorizontalOptions="FillAndExpand" />
+
+        <StackLayout Padding="35" HorizontalOptions="Center" VerticalOptions="FillAndExpand">
+
+
+
+            <Label Text="Sejam bem vindos!"
+               Margin="30"
+               FontSize="24"
+               FontFamily="OpenSansBold"
+               HorizontalOptions="Center"
+               TextColor="DarkSlateGray" />
+
+            <Grid RowSpacing="20" ColumnSpacing="20" Padding="20">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+
+
+                <Button Text="Eventos"
+                    x:Name="Reserva"
+                    Clicked="OnEventsClicked"
+                    FontSize="14"
+                    BackgroundColor="#007ACC"
+                    TextColor="White"
+                    HeightRequest="120"
+                    WidthRequest="120"
+                    CornerRadius="10"
+                    Grid.Row="0" Grid.Column="0" />
+
+                <Button Text="Quem Somos"
+                    Clicked="OnWhoWeAreClicked"
+                    FontSize="14"
+                    BackgroundColor="#32A852"
+                    TextColor="White"
+                    HeightRequest="120"
+                    WidthRequest="120"
+                    CornerRadius="10"
+                    Grid.Row="0" Grid.Column="1" />
+
+                <Button Text="Aniversariantes"
+                    Clicked="OnBirthdayClicked"
+                    FontSize="13" 
+                    BackgroundColor="#D35400"
+                    TextColor="White"
+                    HeightRequest="120"
+                    WidthRequest="120"
+                    CornerRadius="10"
+                    Grid.Row="1" Grid.Column="0" />
+
+                <Button Text="Cadastro"
+                    FontSize="14"
+                    BackgroundColor="#8E44AD"
+                    TextColor="White"
+                    HeightRequest="120"
+                    WidthRequest="120"
+                    CornerRadius="10"
+                    Grid.Row="1" Grid.Column="1" />
+            </Grid>
+        </StackLayout>
+
+    </Grid>
+</ContentPage>

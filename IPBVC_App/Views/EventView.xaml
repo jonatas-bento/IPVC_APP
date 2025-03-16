@@ -1,0 +1,62 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:IPBVC_App.ViewModel;assembly=IPBVC_App"
+             xmlns:core="clr-namespace:Syncfusion.Maui.Core;assembly=Syncfusion.Maui.Core"
+             mc:Ignorable="d"
+             x:Class="IPBVC_App.Views.EventView"
+             Title="Eventos">
+
+    <Grid>
+        <ScrollView>
+            <StackLayout Padding="20">
+                <CollectionView ItemsSource="{Binding Events}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <BoxView CornerRadius="10"
+                                         Color="Transparent"
+                                         HorizontalOptions="FillAndExpand"
+                                         VerticalOptions="FillAndExpand"
+                                         Background="#FFFFFF"
+                                         Margin="5"
+                                         Shadow="{StaticResource MyShadowStyle}"/>
+                                <Frame Margin="5" Padding="10" CornerRadius="10" BorderColor="#ccc">
+                                    <StackLayout>
+                                        <Label Text="{Binding EventName}" FontSize="Medium" FontAttributes="Bold" />
+                                        <StackLayout Orientation="Horizontal" Spacing="10">
+                                            <Label Text="{Binding EventDate, StringFormat='{0:MMMM dd, yyyy}'}" FontSize="Small" />
+                                            <Label Text="{Binding EventLocation}" FontSize="Small" />
+                                        </StackLayout>
+                                        <Label Text="{Binding EventDescription}" FontSize="Small" MaxLines="3"/>
+                                    </StackLayout>
+                                </Frame>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Button Text="Add Event" Margin="10" Clicked="OnNewEventClicked" />
+            </StackLayout>
+        </ScrollView>
+
+        <!-- SfBusyIndicator positioned to overlay the entire Grid content -->
+        <core:SfBusyIndicator x:Name="busyIndicator" 
+                              AnimationType="CircularMaterial"
+                              DurationFactor="0.4"
+                              TextColor="Black" 
+                              Title="Carregando..." 
+                              VerticalOptions="CenterAndExpand"
+                              HorizontalOptions="CenterAndExpand"
+                              IndicatorColor="Aqua"
+                              OverlayFill="Gray"/>
+    </Grid>
+
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Shadow x:Key="MyShadowStyle" Opacity="0.8" Radius="5" Brush="Gray"  />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    
+</ContentPage>
