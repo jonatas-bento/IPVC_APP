@@ -3,7 +3,7 @@ name: Build and Deploy .NET MAUI Android App
 on:
   push:
     branches:
-      - main  # Runs when code is pushed to main branch
+      - main  # Runs when code is pushed to the main branch
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
@@ -12,12 +12,11 @@ jobs:
 
     steps:
 
-        # ✅ Step 0: Fix Permissions Before Checkout
+      # ✅ Step 0: Fix Permissions Before Checkout
       - name: Fix Folder Ownership
         run: |
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP
-
     
       # ✅ Step 1: Checkout Repository
       - name: Checkout Repository
@@ -35,7 +34,10 @@ jobs:
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-      
+
+          # 🔹 Ensure clean installation (remove old SDK to avoid conflicts)
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME/cmdline-tools/latest
+          
           # 🔹 Ensure proper ownership & permissions
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/cmdline-tools
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
@@ -61,13 +63,16 @@ jobs:
             "build-tools;30.0.3" \
             "build-tools;33.0.2"
 
-
       # ✅ Step 4: Install .NET MAUI Workloads (WITH SUDO)
       - name: Install .NET MAUI Workloads
         run: |
           export DOTNET_ROOT=/usr/share/dotnet
           export PATH=$DOTNET_ROOT:$PATH
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
+          if ! $DOTNET_ROOT/dotnet workload list | grep -q "maui-android"; then
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
+          else
+            echo "✅ .NET MAUI Workload already installed!"
+          fi
       
       # ✅ Step 5: Restore Dependencies
       - name: Restore Dependencies
@@ -103,10 +108,10 @@ jobs:
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
       
-           # ✅ Step 8: Fix File Permissions Before Upload
+      # ✅ Step 8: Fix File Permissions Before Upload
       - name: Fix Permissions for AAB File
         run: |
-          chmod -R 777 $HOME/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android/
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $HOME/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android/
 
       # ✅ Step 9: Upload AAB as Artifact
       - name: Upload AAB as Artifact
@@ -115,23 +120,22 @@ jobs:
           name: release-aab
           path: "**/*.aab"
       
-      # 🔹 OPTIONAL: Deploy to Google Play
+  # 🔹 OPTIONAL: Deploy to Google Play
   deploy:
-        needs: build
-        runs-on: self-hosted
-        steps:
-          - name: Download AAB Artifact
-            uses: actions/download-artifact@v4
-            with:
-              name: release-aab
-              path: app-release.aab
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Download AAB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab
+          path: app-release.aab
       
-          - name: Upload to Google Play
-            uses: r0adkll/upload-google-play@v1
-            with:
-              serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
-              packageName: "com.companyname.ipbvc_app"
-              releaseFiles: "app-release.aab"
-              track: production
-              status: completed
-
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
+          packageName: "com.companyname.ipbvc_app"
+          releaseFiles: "app-release.aab"
+          track: production
+          status: completed
