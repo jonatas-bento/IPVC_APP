@@ -81,7 +81,8 @@ jobs:
           /p:AndroidSdkDirectory=$ANDROID_HOME \
           /p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
           /p:AndroidSdkPlatformToolsVersion=30.0.3 \
-          /p:PublishTrimmed=false
+          /p:PublishTrimmed=false \
+          /p:RunAOTCompilation=false
 
     - name: Publish Project
       run: dotnet publish -c Release -o ./output --no-build
