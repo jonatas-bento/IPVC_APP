@@ -21,16 +21,14 @@ jobs:
       with:
         dotnet-version: '7.0.x'
 
-    - name: Install Java 17 (Required for Android SDK)
+    - name: Install Java 17 and Required Tools
       run: |
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt-get remove --purge openjdk* -y
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt-get autoremove -y
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
-        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install openjdk-17-jdk -y
+        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install openjdk-17-jdk unzip -y
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-17-openjdk-amd64/bin/java 1
-        java -version
-
-
+        java -version     
 
     - name: Install Android SDK and Accept Licenses
       run: |
