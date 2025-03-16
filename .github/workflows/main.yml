@@ -21,6 +21,9 @@ jobs:
       with:
         dotnet-version: '7.0.x'  # Consider updating to a supported version
 
+    - name: Install .NET MAUI Workloads
+      run: dotnet workload install maui-android
+
     - name: Restore Dependencies
       run: dotnet restore IPBVC_App.sln
 
