@@ -67,7 +67,15 @@ jobs:
       run: dotnet restore
 
     - name: Build Project
-      run: dotnet build --configuration Release --no-restore /p:AndroidSdkDirectory=$ANDROID_HOME
+      run: |
+        export ANDROID_HOME=$HOME/android-sdk
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+    
+        dotnet build --configuration Release --no-restore \
+          /p:AndroidSdkDirectory=$ANDROID_HOME \
+          /p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
+          /p:AndroidSdkPlatformToolsVersion=30.0.3
 
     - name: Publish Project
       run: dotnet publish -c Release -o ./output --no-build
