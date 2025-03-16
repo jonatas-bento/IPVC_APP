@@ -35,26 +35,30 @@ jobs:
         export ANDROID_HOME=$HOME/android-sdk
         export ANDROID_SDK_ROOT=$ANDROID_HOME
         export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-
-        # Ensure sudo runs without an interactive prompt
+    
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME
-
         mkdir -p $ANDROID_HOME/cmdline-tools
+    
+        # Install unzip if not installed
+        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
+        echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
+    
+        # Download and Extract SDK
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
         unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
         mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-
+    
         # Fix permissions
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/licenses
         echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
-
-        # Accept Licenses
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-
-        # Install required SDK components
+    
+        # Properly Accept SDK Licenses
+        echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+    
+        # Install Required SDK Components
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-30" "build-tools;30.0.3"
-
       shell: bash
+
 
     - name: Install .NET MAUI Workloads
       run: dotnet workload install maui-android
