@@ -145,11 +145,20 @@ jobs:
           name: release-aab
           path: ${{ github.workspace }}
 
-      # ✅ Step 13: Fix Permissions of Downloaded AAB (WITH SUDO)
-      - name: Fix Permissions for AAB Before Upload
+      # ✅ Step 13: # Find the AAB file dynamically
+      - name: Find the AAB
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown $USER:$USER "${{ github.workspace }}/app-release.aab"
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 644 "${{ github.workspace }}/app-release.aab"
+          # Find the AAB file dynamically
+          AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
+
+          if [[ -f "$AAB_PATH" ]]; then
+              echo "✅ Found AAB: $AAB_PATH"
+          else
+              echo "❌ ERROR: AAB file not found!"
+              exit 1
+          fi
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 "$AAB_PATH"
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 "$AAB_PATH"
 
       # ✅ Step 14: Verify the Downloaded AAB
       - name: Verify AAB File
