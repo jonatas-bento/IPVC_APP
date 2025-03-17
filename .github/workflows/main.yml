@@ -11,11 +11,6 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      # ✅ Step 0: Fix Permissions Before Checkout
-      - name: Fix Folder Ownership
-        run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP
 
       # ✅ Step 1: Checkout Repository
       - name: Checkout Repository
@@ -33,28 +28,16 @@ jobs:
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-
-          # 🔹 Ensure clean installation
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME/cmdline-tools/latest
           
-          # 🔹 Setup proper permissions
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/cmdline-tools
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
-      
-          # 🔹 Install dependencies
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
-      
-          # 🔹 Download & extract SDK tools
+          
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
           unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
           mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-      
-          # 🔹 Accept licenses
+          
           echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-      
-          # 🔹 Install required components
+          
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
             "platforms;android-30" \
@@ -67,24 +50,17 @@ jobs:
         run: |
           export DOTNET_ROOT=/usr/share/dotnet
           export PATH=$DOTNET_ROOT:$PATH
-          if ! $DOTNET_ROOT/dotnet workload list | grep -q "maui-android"; then
-            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
-          else
-            echo "✅ .NET MAUI Workload already installed!"
-          fi
-      
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
+
       # ✅ Step 5: Restore Dependencies
       - name: Restore Dependencies
-        run: |
-          export DOTNET_ROOT=/usr/share/dotnet
-          export PATH=$DOTNET_ROOT:$PATH
-          dotnet restore
+        run: dotnet restore
       
       # ✅ Step 6: Decode Keystore for Signing
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
       
-      # ✅ Step 7: Build & Sign the App (WITH SUDO)
+      # ✅ Step 7: Build & Sign the App
       - name: Build Signed Android App Bundle
         run: |
           export DOTNET_ROOT=/usr/share/dotnet
@@ -92,7 +68,7 @@ jobs:
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-      
+
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet publish --configuration Release --no-restore \
             -f net7.0-android \
             -p:AndroidSdkDirectory=$ANDROID_HOME \
@@ -107,42 +83,62 @@ jobs:
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
 
-      # ✅ Step 8: Fix File Permissions for AAB File
+      # ✅ Step 8: Locate the .AAB File
+      - name: Locate Generated AAB File
+        run: |
+          echo "Checking .aab files in output directories..."
+          find $GITHUB_WORKSPACE -name "*.aab" || true
+
+      # ✅ Step 9: Move .AAB File to a Known Location
+      - name: Move AAB to Workspace
+        run: |
+          AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
+          if [ -z "$AAB_PATH" ]; then
+            echo "❌ No .aab file found! Build may have failed."
+            exit 1
+          fi
+          echo "✅ Found AAB: $AAB_PATH"
+          mv "$AAB_PATH" "$GITHUB_WORKSPACE/app-release.aab"
+
+      # ✅ Step 10: Fix Permissions for AAB File
       - name: Fix Permissions for AAB File
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/
+          chmod 644 "$GITHUB_WORKSPACE/app-release.aab"
 
-      # ✅ Step 9: Upload AAB as Artifact
+      # ✅ Step 11: Upload AAB as Artifact
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
-          path: |
-            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/com.companyname.ipbvc_app.aab
-            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/com.companyname.ipbvc_app-Signed.aab
+          path: "$GITHUB_WORKSPACE/app-release.aab"
 
-  # 🔹 OPTIONAL: Deploy to Google Play
   deploy:
     needs: build
     runs-on: self-hosted
     steps:
+
+      # ✅ Step 12: Download the AAB Artifact
       - name: Download AAB Artifact
         uses: actions/download-artifact@v4
         with:
           name: release-aab
           path: ${{ github.workspace }}
 
-      - name: Fix AAB Permissions
-        run: chmod 644 ${{ github.workspace }}/com.companyname.ipbvc_app.aab || true
+      # ✅ Step 13: Verify the Downloaded AAB
+      - name: Verify AAB File
+        run: |
+          if [ ! -f "${{ github.workspace }}/app-release.aab" ]; then
+            echo "❌ AAB file not found after download!"
+            exit 1
+          fi
+          echo "✅ AAB file successfully downloaded."
 
+      # ✅ Step 14: Upload to Google Play
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
           packageName: "com.companyname.ipbvc_app"
-          releaseFiles: |
-            ${{ github.workspace }}/com.companyname.ipbvc_app.aab
-            ${{ github.workspace }}/com.companyname.ipbvc_app-Signed.aab
+          releaseFiles: "${{ github.workspace }}/app-release.aab"
           track: production
           status: completed
