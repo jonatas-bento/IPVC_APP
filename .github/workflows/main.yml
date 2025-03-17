@@ -11,13 +11,12 @@ jobs:
     runs-on: self-hosted
 
     steps:
-
       # ✅ Step 0: Fix Permissions Before Checkout
       - name: Fix Folder Ownership
         run: |
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP
-    
+
       # ✅ Step 1: Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -35,10 +34,10 @@ jobs:
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-          # 🔹 Ensure clean installation (remove old SDK to avoid conflicts)
+          # 🔹 Ensure clean installation
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME/cmdline-tools/latest
           
-          # 🔹 Ensure proper ownership & permissions
+          # 🔹 Setup proper permissions
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/cmdline-tools
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
@@ -108,27 +107,21 @@ jobs:
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
 
-      # ✅ Step 9: DIAGNOSE AAB Location (Temporary) - KEEP THIS FOR NOW!
-      - name: Diagnose AAB Location (Temporary)
-        run: |
-          echo "Listing possible AAB locations:"
-          ls -l /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android*/publish/ || true
-          ls -l /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/ || true
-          ls -l /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/ || true
-        shell: bash
-            # ✅ Step 8: Fix File Permissions for AAB File
+      # ✅ Step 8: Fix File Permissions for AAB File
       - name: Fix Permissions for AAB File
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/
 
       # ✅ Step 9: Upload AAB as Artifact
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
-          path: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/app-release.aab/com.companyname.ipbvc_app.aab"
-      
+          path: |
+            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/com.companyname.ipbvc_app.aab
+            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/com.companyname.ipbvc_app-Signed.aab
+
   # 🔹 OPTIONAL: Deploy to Google Play
   deploy:
     needs: build
@@ -138,13 +131,18 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-aab
-          path: app-release.aab
+          path: ${{ github.workspace }}
+
+      - name: Fix AAB Permissions
+        run: chmod 644 ${{ github.workspace }}/com.companyname.ipbvc_app.aab || true
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
           packageName: "com.companyname.ipbvc_app"
-          releaseFiles: ${{ github.workspace }}/com.companyname.ipbvc_app.aab  # Correct path after download
+          releaseFiles: |
+            ${{ github.workspace }}/com.companyname.ipbvc_app.aab
+            ${{ github.workspace }}/com.companyname.ipbvc_app-Signed.aab
           track: production
           status: completed
