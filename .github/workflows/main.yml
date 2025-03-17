@@ -3,14 +3,20 @@ name: Build and Deploy .NET MAUI Android App
 on:
   push:
     branches:
-      - main  # Runs when code is pushed to the main branch
-  workflow_dispatch:  # Allows manual triggering
+      - main
+  workflow_dispatch:  
 
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
+
+      # ✅ Step 0: Fix Folder Ownership **Before Checkout**
+      - name: Fix Workspace Permissions
+        run: |
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $GITHUB_WORKSPACE
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $GITHUB_WORKSPACE
 
       # ✅ Step 1: Checkout Repository
       - name: Checkout Repository
@@ -22,7 +28,7 @@ jobs:
         with:
           dotnet-version: 7.0.x
           
-      # ✅ Step 3: Install Android SDK & Accept Licenses (WITH SUDO)
+      # ✅ Step 3: Install Android SDK & Accept Licenses
       - name: Install Android SDK
         run: |
           export ANDROID_HOME=$HOME/android-sdk
@@ -45,7 +51,7 @@ jobs:
             "build-tools;30.0.3" \
             "build-tools;33.0.2"
 
-      # ✅ Step 4: Install .NET MAUI Workloads (WITH SUDO)
+      # ✅ Step 4: Install .NET MAUI Workloads
       - name: Install .NET MAUI Workloads
         run: |
           export DOTNET_ROOT=/usr/share/dotnet
@@ -83,13 +89,19 @@ jobs:
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
 
-      # ✅ Step 8: Locate the .AAB File
+      # ✅ Step 8: Fix Ownership of Bin/Release to Prevent Errors
+      - name: Fix Ownership of Bin/Release Folder
+        run: |
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $GITHUB_WORKSPACE/IPBVC_App/bin/Release
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $GITHUB_WORKSPACE/IPBVC_App/bin/Release
+
+      # ✅ Step 9: Locate the .AAB File
       - name: Locate Generated AAB File
         run: |
           echo "Checking .aab files in output directories..."
           find $GITHUB_WORKSPACE -name "*.aab" || true
 
-      # ✅ Step 9: Move .AAB File to a Known Location (WITH SUDO)
+      # ✅ Step 10: Move .AAB File to a Known Location
       - name: Move AAB to Workspace
         run: |
           AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
@@ -100,23 +112,11 @@ jobs:
           echo "✅ Found AAB: $AAB_PATH"
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mv "$AAB_PATH" "$GITHUB_WORKSPACE/app-release.aab"
 
-      # ✅ Step 10: Fix Ownership & Permissions for AAB File
+      # ✅ Step 11: Fix Ownership & Permissions for AAB File
       - name: Fix Permissions for AAB File
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown $USER:$USER "$GITHUB_WORKSPACE/app-release.aab"
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 644 "$GITHUB_WORKSPACE/app-release.aab"
+          echo "${{ secrets.SUDO_PASSWORD }}" | 
 
-      # ✅ Step 11: Upload AAB as Artifact
-      - name: Upload AAB as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-aab
-          path: "$GITHUB_WORKSPACE/app-release.aab"
-
-  deploy:
-    needs: build
-    runs-on: self-hosted
-    steps:
 
       # ✅ Step 12: Download the AAB Artifact
       - name: Download AAB Artifact
