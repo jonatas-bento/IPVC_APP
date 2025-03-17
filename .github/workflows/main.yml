@@ -89,7 +89,7 @@ jobs:
           echo "Checking .aab files in output directories..."
           find $GITHUB_WORKSPACE -name "*.aab" || true
 
-      # ✅ Step 9: Move .AAB File to a Known Location
+      # ✅ Step 9: Move .AAB File to a Known Location (WITH SUDO)
       - name: Move AAB to Workspace
         run: |
           AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
@@ -98,12 +98,13 @@ jobs:
             exit 1
           fi
           echo "✅ Found AAB: $AAB_PATH"
-          mv "$AAB_PATH" "$GITHUB_WORKSPACE/app-release.aab"
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mv "$AAB_PATH" "$GITHUB_WORKSPACE/app-release.aab"
 
-      # ✅ Step 10: Fix Permissions for AAB File
+      # ✅ Step 10: Fix Ownership & Permissions for AAB File
       - name: Fix Permissions for AAB File
         run: |
-          chmod 644 "$GITHUB_WORKSPACE/app-release.aab"
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown $USER:$USER "$GITHUB_WORKSPACE/app-release.aab"
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 644 "$GITHUB_WORKSPACE/app-release.aab"
 
       # ✅ Step 11: Upload AAB as Artifact
       - name: Upload AAB as Artifact
@@ -124,7 +125,13 @@ jobs:
           name: release-aab
           path: ${{ github.workspace }}
 
-      # ✅ Step 13: Verify the Downloaded AAB
+      # ✅ Step 13: Fix Permissions of Downloaded AAB (WITH SUDO)
+      - name: Fix Permissions for AAB Before Upload
+        run: |
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown $USER:$USER "${{ github.workspace }}/app-release.aab"
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 644 "${{ github.workspace }}/app-release.aab"
+
+      # ✅ Step 14: Verify the Downloaded AAB
       - name: Verify AAB File
         run: |
           if [ ! -f "${{ github.workspace }}/app-release.aab" ]; then
@@ -133,7 +140,7 @@ jobs:
           fi
           echo "✅ AAB file successfully downloaded."
 
-      # ✅ Step 14: Upload to Google Play
+      # ✅ Step 15: Upload to Google Play
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
