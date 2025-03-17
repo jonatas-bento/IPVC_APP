@@ -151,7 +151,7 @@ jobs:
         with:
           name: release-aab
           path: |
-            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/android/bin/*.aab
+            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android/com.companyname.ipbvc_app.aab
 
 
       # ✅ Step 13: Download the AAB Artifact
