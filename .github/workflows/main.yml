@@ -138,7 +138,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-aab
-          path: ${{ github.workspace }}  # Download to the WORKSPACE root!
+          path: app-release.aab
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
