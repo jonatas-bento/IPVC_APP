@@ -3,21 +3,25 @@ name: Build and Deploy .NET MAUI Android App
 on:
   push:
     branches:
-      - main  # Runs when code is pushed to the main branch
-  workflow_dispatch:  # Allows manual triggering
+      - main
+  workflow_dispatch:
+
+env:  # Set environment variables globally
+  DOTNET_ROOT: /usr/share/dotnet
+  ANDROID_HOME: $HOME/android-sdk
+  ANDROID_SDK_ROOT: $HOME/android-sdk
 
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
-
       # ✅ Step 0: Fix Permissions Before Checkout
       - name: Fix Folder Ownership
         run: |
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP
-    
+
       # ✅ Step 1: Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -27,34 +31,32 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 7.0.x
-          
+
       # ✅ Step 3: Install Android SDK & Accept Licenses (WITH SUDO)
       - name: Install Android SDK
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
           # 🔹 Ensure clean installation (remove old SDK to avoid conflicts)
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME/cmdline-tools/latest
-          
+
           # 🔹 Ensure proper ownership & permissions
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/cmdline-tools
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
-      
+
           # 🔹 Install dependencies
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
-      
+
           # 🔹 Download & extract SDK tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
           unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
           mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-      
+
           # 🔹 Accept licenses
           echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-      
+
           # 🔹 Install required components
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
@@ -66,34 +68,27 @@ jobs:
       # ✅ Step 4: Install .NET MAUI Workloads (WITH SUDO)
       - name: Install .NET MAUI Workloads
         run: |
-          export DOTNET_ROOT=/usr/share/dotnet
           export PATH=$DOTNET_ROOT:$PATH
           if ! $DOTNET_ROOT/dotnet workload list | grep -q "maui-android"; then
             echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
           else
             echo "✅ .NET MAUI Workload already installed!"
           fi
-      
+
       # ✅ Step 5: Restore Dependencies
       - name: Restore Dependencies
         run: |
-          export DOTNET_ROOT=/usr/share/dotnet
           export PATH=$DOTNET_ROOT:$PATH
           dotnet restore
-      
+
       # ✅ Step 6: Decode Keystore for Signing
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
-      
+
       # ✅ Step 7: Build & Sign the App (WITH SUDO)
       - name: Build Signed Android App Bundle
         run: |
-          export DOTNET_ROOT=/usr/share/dotnet
-          export PATH=$DOTNET_ROOT:$PATH
-          export ANDROID_HOME=$HOME/android-sdk
-          export ANDROID_SDK_ROOT=$ANDROID_HOME
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-      
+          export PATH=$DOTNET_ROOT:$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet publish --configuration Release --no-restore \
             -f net7.0-android \
             -p:AndroidSdkDirectory=$ANDROID_HOME \
@@ -107,21 +102,31 @@ jobs:
             -p:AndroidSigningStorePass=${{ secrets.KEYSTORE_PASSWORD }} \
             -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
             -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
-      
-            # ✅ Step 8: Fix File Permissions for AAB File
+
+      # ✅ Step 8: Fix File Permissions for AAB File (Optional, but good practice)
       - name: Fix Permissions for AAB File
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/
+           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/
+           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/
 
-      # ✅ Step 9: Upload AAB as Artifact
+      # ✅ Step 9: DIAGNOSE AAB Location (Temporary) - KEEP THIS FOR NOW!
+      - name: Diagnose AAB Location (Temporary)
+        run: |
+          echo "Listing possible AAB locations:"
+          ls -l /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android*/publish/ || true
+          ls -l /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/ || true
+          ls -l /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/ || true
+        shell: bash
+
+      # ✅ Step 10: Upload AAB as Artifact (CORRECT THE PATH AFTER DIAGNOSIS)
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
-          path: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/android/bin/com.companyname.ipbvc_app.aab"
-      
-  # 🔹 OPTIONAL: Deploy to Google Play
+          path: "REPLACE_WITH_CORRECT_PATH_FROM_DIAGNOSTIC_STEP" # <--- VERY IMPORTANT
+
+
+  # 🔹 Deploy to Google Play
   deploy:
     needs: build
     runs-on: self-hosted
@@ -130,16 +135,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-aab
-          path: app-release.aab
-      - name: List files in Directory
-        run: ls -l
-            
+          path: ${{ github.workspace }}  # Download to workspace root
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
-             serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
-             packageName: "com.companyname.ipbvc_app"
-             releaseFiles: "/home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/app-release.aab/com.companyname.ipbvc_app.aab"
-             track: production
-             status: completed
-     
+          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
+          packageName: "com.companyname.ipbvc_app"
+          releaseFiles: ${{ github.workspace }}/com.companyname.ipbvc_app.aab  # Correct relative path
+          track: production
+          status: completed
