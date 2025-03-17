@@ -133,10 +133,17 @@ jobs:
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mv "$AAB_PATH" "$GITHUB_WORKSPACE/app-release.aab"
 
       # ✅ Step 11: Fix Ownership & Permissions for AAB File
-      - name: Fix Permissions for AAB File
+      - name: Set Correct Permissions for AAB File
         run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | 
-
+          AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
+      
+          if [[ -f "$AAB_PATH" ]]; then
+            echo "✅ Found AAB: $AAB_PATH"
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 "$AAB_PATH"
+          else
+            echo "❌ ERROR: AAB file not found!"
+            exit 1
+          fi
 
       # ✅ Step 12: Download the AAB Artifact
       - name: Download AAB Artifact
