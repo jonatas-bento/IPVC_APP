@@ -145,14 +145,23 @@ jobs:
             exit 1
           fi
 
-      # ✅ Step 12: Download the AAB Artifact
+       # ✅ Step 12: Upload AAB as Artifact
+      - name: Upload AAB as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab
+          path: |
+            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/obj/Release/net7.0-android/android/bin/*.aab
+
+
+      # ✅ Step 13: Download the AAB Artifact
       - name: Download AAB Artifact
         uses: actions/download-artifact@v4
         with:
           name: release-aab
           path: ${{ github.workspace }}
 
-      # ✅ Step 13: # Find the AAB file dynamically
+      # ✅ Step 14: # Find the AAB file dynamically
       - name: Find the AAB
         run: |
           # Find the AAB file dynamically
