@@ -32,7 +32,7 @@ jobs:
         with:
           dotnet-version: 7.0.x
 
-      # ✅ Step 3: Install Android SDK & Accept Licenses (WITH SUDO) - CORRECTED
+      # ✅ Step 3: Install Android SDK & Accept Licenses (WITH SUDO) - CORRECTED AGAIN
       - name: Install Android SDK
         run: |
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
@@ -54,10 +54,10 @@ jobs:
           unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
           # ⬆️ Extract directly into cmdline-tools
 
-          # ✅ Create the 'latest' subdirectory and move the contents
+          # ✅ Create the 'latest' subdirectory and move the contents - CORRECTED
           mkdir -p $ANDROID_HOME/cmdline-tools/latest
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
-          rmdir $ANDROID_HOME/cmdline-tools/cmdline-tools # Remove the extra 'cmdline-tools' dir
+          mv $ANDROID_HOME/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
+          # ⬆️ This is the corrected mv command. No extra 'cmdline-tools'
 
           # 🔹 Accept licenses
           echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
@@ -69,13 +69,14 @@ jobs:
             "platforms;android-33" \
             "build-tools;30.0.3" \
             "build-tools;33.0.2"
+
       # ✅ Step 4: Install .NET MAUI Workloads (WITH SUDO)
       - name: Install .NET MAUI Workloads
         run: |
           export PATH=$DOTNET_ROOT:$PATH
           if ! $DOTNET_ROOT/dotnet workload list | grep -q "maui-android"; then
             echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
-          else
+          else:
             echo "✅ .NET MAUI Workload already installed!"
           fi
 
