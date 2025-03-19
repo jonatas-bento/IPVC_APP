@@ -4,193 +4,88 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: self-hosted
 
     steps:
-
-      # ✅ Step 0: Fix Folder Ownership **Before Checkout**
+      # --- Permission Fixes (Simplified) ---
       - name: Fix Workspace Permissions
         run: |
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $GITHUB_WORKSPACE
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $GITHUB_WORKSPACE
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 755 $GITHUB_WORKSPACE  # 777 is overly permissive
 
-      # ✅ Step 1: Checkout Repository
+      # --- Checkout & .NET Setup ---
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ✅ Step 2: Setup .NET SDK
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 7.0.x
-          
-      # ✅ Step 3: Install Android SDK & Accept Licenses
-      # ✅ Step 3: Install Android SDK & Accept Licenses (WITH SUDO)
+
+      # --- Android SDK Installation (Improved) ---
       - name: Install Android SDK
         run: |
           export ANDROID_HOME=$HOME/android-sdk
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-          # 🔹 Ensure clean installation
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf $ANDROID_HOME/cmdline-tools/latest
-          
-          # 🔹 Setup proper permissions
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mkdir -p $ANDROID_HOME/cmdline-tools
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $ANDROID_HOME
-      
-          # 🔹 Install dependencies
+          # Download and extract in one step (more reliable)
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install unzip -y
-      
-          # 🔹 Download & extract SDK tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
-          unzip -o commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
-          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-      
-          # 🔹 Accept licenses
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install -y unzip
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -P $ANDROID_HOME
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S unzip -q -o $ANDROID_HOME/commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
+
+          # Accept licenses and install components
           echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-      
-          # 🔹 Install required components
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
-            "platforms;android-30" \
             "platforms;android-33" \
-            "build-tools;30.0.3" \
             "build-tools;33.0.2"
 
-      # ✅ Step 4: Install .NET MAUI Workloads
+      # --- .NET MAUI Workload (Simplified) ---
       - name: Install .NET MAUI Workloads
         run: |
-          export DOTNET_ROOT=/usr/share/dotnet
-          export PATH=$DOTNET_ROOT:$PATH
-          if ! $DOTNET_ROOT/dotnet workload list | grep -q "maui-android"; then
-            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet workload install maui-android
-          else
-            echo "✅ .NET MAUI Workload already installed!"
-          fi
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S dotnet workload install maui-android
 
-      # ✅ Step 5: Restore Dependencies
       - name: Restore Dependencies
-        run: |
-          export DOTNET_ROOT=/usr/share/dotnet
-          export PATH=$DOTNET_ROOT:$PATH
-          dotnet restore
-      
-      # ✅ Step 6: Decode Keystore for Signing
+        run: dotnet restore
+
+      # --- Keystore Decoding ---
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
-      
-      # ✅ Step 7: Build & Sign the App
+
+      # --- Build and Sign (Simplified and More Robust) ---
       - name: Build Signed Android App Bundle
         run: |
-          export DOTNET_ROOT=/usr/share/dotnet
-          export PATH=$DOTNET_ROOT:$PATH
-          export ANDROID_HOME=$HOME/android-sdk
-          export ANDROID_SDK_ROOT=$ANDROID_HOME
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
-
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S $DOTNET_ROOT/dotnet publish --configuration Release --no-restore \
-            -f net7.0-android \
-            -p:AndroidSdkDirectory=$ANDROID_HOME \
-            -p:AndroidNdkDirectory=$ANDROID_HOME/ndk \
-            -p:AndroidSdkPlatformToolsVersion=30.0.3 \
-            -p:PublishTrimmed=false \
-            -p:RunAOTCompilation=false \
+          dotnet publish -f net7.0-android -c Release --no-restore \
+            -p:AndroidSdkDirectory=$HOME/android-sdk \
             -p:AndroidPackageFormat=aab \
             -p:AndroidKeyStore=True \
             -p:AndroidSigningKeyStore=$HOME/android_keystore.jks \
-            -p:AndroidSigningStorePass=${{ secrets.KEYSTORE_PASSWORD }} \
-            -p:AndroidSigningKeyAlias=${{ secrets.KEY_ALIAS }} \
-            -p:AndroidSigningKeyPass=${{ secrets.KEY_PASSWORD }}
+            -p:AndroidSigningStorePass="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -p:AndroidSigningKeyAlias="${{ secrets.KEY_ALIAS }}" \
+            -p:AndroidSigningKeyPass="${{ secrets.KEY_PASSWORD }}" \
+            -o "$GITHUB_WORKSPACE"  # Output directly to workspace!
 
-      # ✅ Step 8: Fix Ownership of Bin/Release to Prevent Errors
-      - name: Fix Ownership of Bin/Release Folder
-        run: |
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $GITHUB_WORKSPACE/IPBVC_App/bin/Release
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 $GITHUB_WORKSPACE/IPBVC_App/bin/Release
-
-      # ✅ Step 9: Locate the .AAB File
-      - name: Locate Generated AAB File
-        run: |
-          echo "Checking .aab files in output directories..."
-          find $GITHUB_WORKSPACE -name "*.aab" || true
-
-      # ✅ Step 10: Move .AAB File to a Known Location
-      - name: Move AAB to Workspace
-        run: |
-          AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
-          if [ -z "$AAB_PATH" ]; then
-            echo "❌ No .aab file found! Build may have failed."
-            exit 1
-          fi
-          echo "✅ Found AAB: $AAB_PATH"
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mv "$AAB_PATH" "$GITHUB_WORKSPACE/app-release.aab"
-
-      # ✅ Step 11: Fix Ownership & Permissions for AAB File
-      - name: Set Correct Permissions for AAB File
-        run: |
-          AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
-      
-          if [[ -f "$AAB_PATH" ]]; then
-            echo "✅ Found AAB: $AAB_PATH"
-            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 "$AAB_PATH"
-          else
-            echo "❌ ERROR: AAB file not found!"
-            exit 1
-          fi
-
-       # ✅ Step 12: Upload AAB as Artifact
+      # --- Upload AAB as Artifact (Simplified) ---
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
-          path: |
-            /home/jonatas-bento/actions-runner/_work/IPVC_APP/IPVC_APP/IPBVC_App/bin/Release/net7.0-android/com.companyname.ipbvc_app.aab
+          path: ${{ github.workspace }}/*.aab  # Use wildcard to find AAB
 
-
-      # ✅ Step 13: Download the AAB Artifact
-      - name: Download AAB Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: release-aab
-          path: ${{ github.workspace }}
-
-      # ✅ Step 14: # Find the AAB file dynamically
-      - name: Find the AAB
-        run: |
-          # Find the AAB file dynamically
-          AAB_PATH=$(find $GITHUB_WORKSPACE -name "*.aab" | head -n 1)
-
-          if [[ -f "$AAB_PATH" ]]; then
-              echo "✅ Found AAB: $AAB_PATH"
-          else
-              echo "❌ ERROR: AAB file not found!"
-              exit 1
-          fi
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 "$AAB_PATH"
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod -R 777 "$AAB_PATH"
-
-      # ✅ Step 14: Verify the Downloaded AAB
-      - name: Verify AAB File
-        run: |
-          if [ ! -f "${{ github.workspace }}/app-release.aab" ]; then
-            echo "❌ AAB file not found after download!"
-            exit 1
-          fi
-          echo "✅ AAB file successfully downloaded."
-
-      # ✅ Step 15: Upload to Google Play
+      # --- Upload to Google Play (Corrected Path) ---
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
-          packageName: "com.companyname.ipbvc_app"
-          releaseFiles: "${{ github.workspace }}/app-release.aab"
+          packageName: com.companyname.ipbvc_app
+          releaseFiles: ${{ github.workspace }}/*.aab # Corrected path! Wildcard.
           track: production
           status: completed
