@@ -87,6 +87,7 @@ jobs:
             -p:AndroidSigningKeyAlias="${{ secrets.KEY_ALIAS }}" \
             -p:AndroidSigningKeyPass="${{ secrets.KEY_PASSWORD }}" \
             -p:PublishTrimmed=false  # Disable trimming
+            -p:RunAOTCompilation=false # Disable AOT
             -o "$GITHUB_WORKSPACE"
 
       # --- Upload AAB as Artifact (Simplified) ---
