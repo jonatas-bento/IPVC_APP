@@ -15,7 +15,7 @@ jobs:
       - name: Fix Workspace Permissions
         run: |
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $GITHUB_WORKSPACE
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 755 $GITHUB_WORKSPACE  # 777 is overly permissive
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chmod 755 $GITHUB_WORKSPACE
 
       # --- Checkout & .NET Setup ---
       - name: Checkout Repository
@@ -75,7 +75,7 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > $HOME/android_keystore.jks
 
-      # --- Build and Sign (Simplified and More Robust) ---
+      # --- Build and Sign ---
       - name: Build Signed Android App Bundle
         run: |
           dotnet publish -f net7.0-android -c Release --no-restore \
@@ -86,23 +86,13 @@ jobs:
             -p:AndroidSigningStorePass="${{ secrets.KEYSTORE_PASSWORD }}" \
             -p:AndroidSigningKeyAlias="${{ secrets.KEY_ALIAS }}" \
             -p:AndroidSigningKeyPass="${{ secrets.KEY_PASSWORD }}" \
-            -p:PublishTrimmed=false  # Disable trimming
-            -p:RunAOTCompilation=false # Disable AOT
+            -p:PublishTrimmed=false \
+            -p:RunAOTCompilation=false \
             -o "$GITHUB_WORKSPACE"
 
-      # --- Upload AAB as Artifact (Simplified) ---
+      # --- Upload AAB as Artifact ---
       - name: Upload AAB as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-aab
-          path: ${{ github.workspace }}/*.aab  # Use wildcard to find AAB
-
-      # --- Upload to Google Play (Corrected Path) ---
-      - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJson: ${{ secrets.GOOGLE_PLAY_JSON }}
-          packageName: com.companyname.ipbvc_app
-          releaseFiles: ${{ github.workspace }}/*.aab # Corrected path! Wildcard.
-          track: production
-          status: completed
+          name: release-aab  #  Name of the artifact
+          path: ${{ github.workspace }}/*.aab  # Path to the AAB file
