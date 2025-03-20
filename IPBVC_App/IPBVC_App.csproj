@@ -34,6 +34,11 @@
 		<TargetFrameworks>net7.0-android;</TargetFrameworks>
 	</PropertyGroup>
 	
+	<!--<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net7.0-android|AnyCPU'">
+	  <RunAOTCompilation>False</RunAOTCompilation>
+	  <PublishTrimmed>False</PublishTrimmed>
+	</PropertyGroup>-->
+	
 
 	<ItemGroup>
 		<!-- App Icon -->
