@@ -71,7 +71,8 @@ jobs:
             -p:AndroidSigningStorePass="${{ secrets.KEYSTORE_PASSWORD }}" \
             -p:AndroidSigningKeyAlias="${{ secrets.KEY_ALIAS }}" \
             -p:AndroidSigningKeyPass="${{ secrets.KEY_PASSWORD }}" \
-            -o "$GITHUB_WORKSPACE"  # Output directly to workspace!
+            -p:PublishTrimmed=false  # Disable trimming
+            -o "$GITHUB_WORKSPACE"
 
       # --- Upload AAB as Artifact (Simplified) ---
       - name: Upload AAB as Artifact
