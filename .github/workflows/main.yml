@@ -33,13 +33,25 @@ jobs:
           export ANDROID_SDK_ROOT=$ANDROID_HOME
           export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
 
-          # Download and extract in one step (more reliable)
+          # Ensure consistent permissions
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
+
+          # Install unzip (needed for later)
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt update
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S apt install -y unzip
+
+          # Download and extract the command-line tools in one step, directly into cmdline-tools
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -P $ANDROID_HOME
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S unzip -q -o $ANDROID_HOME/commandlinetools-linux-10406996_latest.zip -d $ANDROID_HOME/cmdline-tools
+
+          # Clean up the zip file
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm $ANDROID_HOME/commandlinetools-linux-10406996_latest.zip
+
+          # Safely create or replace the 'latest' directory
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
+            echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+          fi
           echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
 
           # Accept licenses and install components
           echo -e "y\ny\ny\ny\ny\ny\n" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
@@ -47,6 +59,9 @@ jobs:
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
+
+          # Ensure permissions are correct after installation
+          echo "${{ secrets.SUDO_PASSWORD }}" | sudo -S chown -R $USER:$USER $ANDROID_HOME
 
       # --- .NET MAUI Workload (Simplified) ---
       - name: Install .NET MAUI Workloads
